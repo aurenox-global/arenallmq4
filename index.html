@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏟️ Arena LLM - Comparador de Modelos Q4</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+    </script>
+    <style>
+        :root {
+            --bg: #0a0a14;
+            --surface: #13132b;
+            --surface2: #1a1a38;
+            --glass: rgba(20, 20, 50, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text: #e2e2f0;
+            --text2: #a0a0c0;
+            --text3: #7070a0;
+            --accent1: #7c5cfc;
+            --accent2: #00d4aa;
+            --accent3: #ff6b9d;
+            --accent4: #ffa94d;
+            --gold: #f7c948;
+            --blue: #4da6ff;
+            --green: #3dd68c;
+            --red: #f87171;
+            --radius: 18px;
+            --radius-sm: 10px;
+            --shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(120, 80, 255, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 30%, rgba(0, 180, 160, 0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 70%, rgba(255, 100, 150, 0.06) 0%, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 28px 20px 10px;
+            position: relative;
+        }
+        .header .logo {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #c4b5fd, #7dd3fc, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+        .header .subtitle {
+            font-size: 0.95rem;
+            color: var(--text2);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+        .header .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--text2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .badge.q4 {
+            background: rgba(247, 201, 72, 0.12);
+            border-color: rgba(247, 201, 72, 0.3);
+            color: var(--gold);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px 40px;
+        }
+
+        /* Arena Selectors */
+        .arena-row {
+            display: flex;
+            gap: 24px;
+            align-items: stretch;
+            margin: 20px 0 28px;
+            flex-wrap: wrap;
+        }
+        .model-panel {
+            flex: 1;
+            min-width: 300px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .model-panel:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 12px 50px rgba(0, 0, 0, 0.6);
+        }
+        .model-panel.left {
+            border-top: 3px solid var(--accent1);
+        }
+        .model-panel.right {
+            border-top: 3px solid var(--accent2);
+        }
+        .model-panel .panel-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .model-panel .model-select {
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a0a0c0' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+        }
+        .model-select:focus {
+            outline: none;
+            border-color: var(--accent1);
+            box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.15);
+        }
+        .model-panel.right .model-select:focus {
+            border-color: var(--accent2);
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15);
+        }
+        .model-panel .model-info-compact {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text2);
+        }
+        .model-panel .info-chip {
+            padding: 4px 10px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            font-weight: 500;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .vs-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.6rem;
+            color: var(--text3);
+            padding: 0 4px;
+            user-select: none;
+            letter-spacing: -0.03em;
+        }
+        @media (max-width: 768px) {
+            .vs-divider {
+                padding: 0;
+                font-size: 1.2rem;
+            }
+            .arena-row {
+                gap: 12px;
+            }
+        }
+
+        /* Battle Button */
+        .battle-btn-wrap {
+            text-align: center;
+            margin: 0 0 24px;
+        }
+        .btn-battle {
+            padding: 12px 32px;
+            border-radius: 28px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent1), #9b6dff);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: var(--transition);
+            box-shadow: 0 4px 20px rgba(124, 92, 252, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-battle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(124, 92, 252, 0.5);
+        }
+        .btn-battle:active {
+            transform: scale(0.96);
+        }
+        .btn-battle .icon {
+            margin-right: 6px;
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .chart-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+        .chart-card h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text2);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .chart-card canvas {
+            max-height: 340px;
+        }
+
+        /* Strengths Comparison */
+        .strengths-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        @media (max-width: 768px) {
+            .strengths-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .strength-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+        }
+        .strength-card h4 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            letter-spacing: -0.01em;
+        }
+        .strength-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .strength-card ul li {
+            padding: 6px 0 6px 22px;
+            position: relative;
+            font-size: 0.88rem;
+            color: var(--text2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .strength-card ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--accent1);
+            font-weight: 700;
+        }
+        .strength-card.right-card ul li::before {
+            color: var(--accent2);
+        }
+
+        /* Verdict */
+        .verdict-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 22px 26px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .verdict-card h3 {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent4), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .verdict-card .verdict-text {
+            font-size: 0.9rem;
+            color: var(--text2);
+            line-height: 1.6;
+        }
+
+        /* Detailed Table */
+        .detail-table-wrap {
+            overflow-x: auto;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 4px;
+        }
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 600px;
+        }
+        .detail-table th,
+        .detail-table td {
+            padding: 11px 14px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .detail-table th {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.7rem;
+            color: var(--text3);
+            background: rgba(255, 255, 255, 0.02);
+            position: sticky;
+            top: 0;
+        }
+        .detail-table .model-col {
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .detail-table .score {
+            font-weight: 700;
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        .score.high {
+            background: rgba(61, 214, 140, 0.15);
+            color: var(--green);
+        }
+        .score.mid {
+            background: rgba(247, 201, 72, 0.12);
+            color: var(--gold);
+        }
+        .score.low {
+            background: rgba(248, 113, 113, 0.12);
+            color: var(--red);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header .logo {
+                font-size: 1.8rem;
+            }
+            .model-panel {
+                padding: 14px 16px;
+            }
+            .model-select {
+                font-size: 0.82rem;
+                padding: 9px 12px;
+            }
+            .chart-card {
+                padding: 14px 12px;
+            }
+            .strength-card {
+                padding: 14px 16px;
+            }
+            .verdict-card {
+                padding: 16px 18px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        /* Glow pulse for vs */
+        @keyframes glowPulse {
+            0%,
+            100% {
+                text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                text-shadow: 0 0 22px rgba(200, 180, 255, 0.7);
+            }
+        }
+        .vs-divider span {
+            animation: glowPulse 2.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">🏟️ Arena LLM</div>
+        <p class="subtitle">Compara modelos Q4 lado a lado · Descubre sus fortalezas y habilidades</p>
+        <div class="badge-row">
+            <span class="badge">📦 22 Modelos</span>
+            <span class="badge q4">⚡ Q4 Cuantizados</span>
+            <span class="badge">🎯 1vs1</span>
+            <span class="badge">📊 Gráficas</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Arena Selectors -->
+        <div class="arena-row" id="arenaRow">
+            <div class="model-panel left animate-in" id="panelLeft">
+                <div class="panel-label">🔵 Modelo A</div>
+                <select class="model-select" id="modelASelect" onchange="updateComparison()">
+                    <optgroup label="🏠 Qwen 2.5">
+                        <option value="qwen25-3b">Qwen 2.5 3B</option>
+                        <option value="qwen25-7b" selected>Qwen 2.5 7B</option>
+                    </optgroup>
+                    <optgroup label="💻 Qwen Coder">
+                        <option value="qwen25-coder-3b">Qwen 2.5 Coder 3B</option>
+                        <option value="qwen25-coder-7b">Qwen 2.5 Coder 7B</option>
+                    </optgroup>
+                    <optgroup label="🏠 Qwen 3">
+                        <option value="qwen3-4b">Qwen 3 4B</option>
+                        <option value="qwen3-8b">Qwen 3 8B</option>
+                    </optgroup>
+                    <optgroup label="🏠 Qwen 3.5">
+                        <option value="qwen35-4b">Qwen 3.5 4B</option>
+                        <option value="qwen35-9b">Qwen 3.5 9B</option>
+                    </optgroup>
+                    <optgroup label="🦙 Llama">
+                        <option value="llama32-3b">Llama 3.2 3B</option>
+                        <option value="llama31-8b">Llama 3.1 8B</option>
+                    </optgroup>
+                    <optgroup label="🧠 DeepSeek R1">
+                        <option value="ds-r1-llama-8b">DeepSeek R1 Distill Llama 8B</option>
+                        <option value="ds-r1-qwen-7b">DeepSeek R1 Distill Qwen 7B</option>
+                        <option value="ds-r1-qwen3-8b">DeepSeek R1 0528 Qwen3 8B</option>
+                    </optgroup>
+                    <optgroup label="💎 Gemma">
+                        <option value="gemma3-4b">Gemma 3 4B</option>
+                        <option value="gemma4-e2b">Gemma 4 e2B</option>
+                        <option value="gemma4-e4b">Gemma 4 e4B</option>
+                    </optgroup>
+                    <optgroup label="⚡ Compactos">
+                        <option value="smollm3-3b">SmolLM3 3B</option>
+                        <option value="helium-2b">Helium 2B</option>
+                        <option value="phi35-mini">Phi-3.5 Mini</option>
+                    </optgroup>
+                    <optgroup label="🧩 Otros">
+                        <option value="qwen3-4b-thinking">Qwen3 4B Thinking</option>
+                        <option value="mistral3-7b">Mistral 3 7B</option>
+                        <option value="glm4-9b">GLM-4 9B Chat</option>
+                    </optgroup>
+                </select>
+                <div class="model-info-compact" id="modelAInfo"></div>
+            </div>
+
+            <div class="vs-divider"><span>⚔️ VS</span></div>
+
+            <div class="model-panel right animate-in" id="panelRight">
+                <div class="panel-label">🟢 Modelo B</div>
+                <select class="model-select" id="modelBSelect" onchange="updateComparison()">
+                    <optgroup label="🏠 Qwen 2.5">
+                        <option value="qwen25-3b">Qwen 2.5 3B</option>
+                        <option value="qwen25-7b">Qwen 2.5 7B</option>
+                    </optgroup>
+                    <optgroup label="💻 Qwen Coder">
+                        <option value="qwen25-coder-3b">Qwen 2.5 Coder 3B</option>
+                        <option value="qwen25-coder-7b" selected>Qwen 2.5 Coder 7B</option>
+                    </optgroup>
+                    <optgroup label="🏠 Qwen 3">
+                        <option value="qwen3-4b">Qwen 3 4B</option>
+                        <option value="qwen3-8b">Qwen 3 8B</option>
+                    </optgroup>
+                    <optgroup label="🏠 Qwen 3.5">
+                        <option value="qwen35-4b">Qwen 3.5 4B</option>
+                        <option value="qwen35-9b">Qwen 3.5 9B</option>
+                    </optgroup>
+                    <optgroup label="🦙 Llama">
+                        <option value="llama32-3b">Llama 3.2 3B</option>
+                        <option value="llama31-8b">Llama 3.1 8B</option>
+                    </optgroup>
+                    <optgroup label="🧠 DeepSeek R1">
+                        <option value="ds-r1-llama-8b">DeepSeek R1 Distill Llama 8B</option>
+                        <option value="ds-r1-qwen-7b">DeepSeek R1 Distill Qwen 7B</option>
+                        <option value="ds-r1-qwen3-8b">DeepSeek R1 0528 Qwen3 8B</option>
+                    </optgroup>
+                    <optgroup label="💎 Gemma">
+                        <option value="gemma3-4b">Gemma 3 4B</option>
+                        <option value="gemma4-e2b">Gemma 4 e2B</option>
+                        <option value="gemma4-e4b">Gemma 4 e4B</option>
+                    </optgroup>
+                    <optgroup label="⚡ Compactos">
+                        <option value="smollm3-3b">SmolLM3 3B</option>
+                        <option value="helium-2b">Helium 2B</option>
+                        <option value="phi35-mini">Phi-3.5 Mini</option>
+                    </optgroup>
+                    <optgroup label="🧩 Otros">
+                        <option value="qwen3-4b-thinking">Qwen3 4B Thinking</option>
+                        <option value="mistral3-7b">Mistral 3 7B</option>
+                        <option value="glm4-9b">GLM-4 9B Chat</option>
+                    </optgroup>
+                </select>
+                <div class="model-info-compact" id="modelBInfo"></div>
+            </div>
+        </div>
+
+        <!-- Battle Button -->
+        <div class="battle-btn-wrap">
+            <button class="btn-battle" onclick="randomBattle()"><span class="icon">🎲</span> Batalla Aleatoria</button>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card animate-in">
+                <h3>📡 Radar de Habilidades (0-100)</h3>
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div class="chart-card animate-in">
+                <h3>📊 Benchmarks Comparativos</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Strengths -->
+        <div class="strengths-grid" id="strengthsGrid">
+            <div class="strength-card" id="strengthCardA">
+                <h4 id="strengthTitleA">🔵 Fortalezas Modelo A</h4>
+                <ul id="strengthListA"></ul>
+            </div>
+            <div class="strength-card right-card" id="strengthCardB">
+                <h4 id="strengthTitleB">🟢 Fortalezas Modelo B</h4>
+                <ul id="strengthListB"></ul>
+            </div>
+        </div>
+
+        <!-- Verdict -->
+        <div class="verdict-card animate-in" id="verdictCard">
+            <h3>🏆 Veredicto del Enfrentamiento</h3>
+            <p class="verdict-text" id="verdictText">Selecciona dos modelos para ver el análisis comparativo.</p>
+        </div>
+
+        <!-- Detailed Table -->
+        <div class="detail-table-wrap animate-in">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th class="model-col">Modelo</th>
+                        <th>Conocimiento General</th>
+                        <th>Programación</th>
+                        <th>Razonamiento</th>
+                        <th>Velocidad</th>
+                        <th>Seg. Instrucciones</th>
+                        <th>Multilingüe</th>
+                        <th>⭐ Global</th>
+                    </tr>
+                </thead>
+                <tbody id="detailTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ==================== MODEL DATABASE ====================
+        const modelsDB = {
+            'qwen25-3b': {
+                id: 'qwen25-3b',
+                name: 'Qwen 2.5 3B',
+                family: 'Qwen 2.5',
+                params: '3B',
+                category: 'General',
+                contextWindow: '32K',
+                color: '#7c5cfc',
+                description: 'Modelo compacto balanceado con buen rendimiento general para su tamaño.',
+                strengths: [
+                    'Excelente relación tamaño-rendimiento',
+                    'Buen soporte multilingüe (chino/inglés)',
+                    'Eficiente en recursos, ideal para CPU',
+                    'Respuesta rápida en hardware modesto',
+                ],
+                bestFor: [
+                    'Chatbots ligeros',
+                    'Tareas de clasificación y extracción',
+                    'Asistencia en múltiples idiomas',
+                    'Despliegue en edge devices',
+                ],
+                benchmarks: { generalKnowledge: 58, coding: 42, mathReasoning: 48, speed: 88, instructionFollowing: 55,
+                    multilingual: 72 },
+            },
+            'qwen25-7b': {
+                id: 'qwen25-7b',
+                name: 'Qwen 2.5 7B',
+                family: 'Qwen 2.5',
+                params: '7B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#7c5cfc',
+                description: 'Modelo generalista muy versátil, gran equilibrio entre calidad y eficiencia.',
+                strengths: [
+                    'Muy buen rendimiento general',
+                    'Ventana de contexto extensa (128K)',
+                    'Sólido en razonamiento y conocimiento',
+                    'Gran soporte multilingüe',
+                ],
+                bestFor: [
+                    'Asistente virtual general',
+                    'Análisis de documentos largos',
+                    'Traducción y tareas multilingües',
+                    'Aplicaciones empresariales',
+                ],
+                benchmarks: { generalKnowledge: 72, coding: 58, mathReasoning: 62, speed: 62, instructionFollowing: 68,
+                    multilingual: 78 },
+            },
+            'qwen25-coder-3b': {
+                id: 'qwen25-coder-3b',
+                name: 'Qwen 2.5 Coder 3B',
+                family: 'Qwen Coder',
+                params: '3B',
+                category: 'Coding',
+                contextWindow: '32K',
+                color: '#00d4aa',
+                description: 'Especialista en código, sorprendente capacidad de programación para 3B.',
+                strengths: [
+                    'Excelente generación de código para su tamaño',
+                    'Buen manejo de múltiples lenguajes de programación',
+                    'Debugging y refactorización competentes',
+                    'Muy rápido en inferencia',
+                ],
+                bestFor: [
+                    'Autocompletado de código',
+                    'Scripts y utilidades rápidas',
+                    'Code review ligero',
+                    'Herramientas de desarrollo integradas',
+                ],
+                benchmarks: { generalKnowledge: 45, coding: 68, mathReasoning: 50, speed: 85, instructionFollowing: 52,
+                    multilingual: 40 },
+            },
+            'qwen25-coder-7b': {
+                id: 'qwen25-coder-7b',
+                name: 'Qwen 2.5 Coder 7B',
+                family: 'Qwen Coder',
+                params: '7B',
+                category: 'Coding',
+                contextWindow: '128K',
+                color: '#00d4aa',
+                description: 'El mejor modelo de código en su categoría de tamaño, muy completo.',
+                strengths: [
+                    'Programación de nivel profesional',
+                    'Soporta decenas de lenguajes',
+                    'Refactorización avanzada',
+                    'Comprensión profunda de codebases',
+                ],
+                bestFor: [
+                    'Desarrollo de software principal',
+                    'Code review profesional',
+                    'Generación de código complejo',
+                    'Asistente de programación full-stack',
+                ],
+                benchmarks: { generalKnowledge: 60, coding: 82, mathReasoning: 64, speed: 55, instructionFollowing: 65,
+                    multilingual: 48 },
+            },
+            'qwen3-4b': {
+                id: 'qwen3-4b',
+                name: 'Qwen 3 4B',
+                family: 'Qwen 3',
+                params: '4B',
+                category: 'General',
+                contextWindow: '32K',
+                color: '#9b6dff',
+                description: 'Nueva generación Qwen3, mejoras en razonamiento y eficiencia.',
+                strengths: [
+                    'Mejor razonamiento que generaciones previas',
+                    'Buena eficiencia computacional',
+                    'Seguimiento de instrucciones mejorado',
+                    'Balance calidad-velocidad',
+                ],
+                bestFor: [
+                    'Chat interactivo',
+                    'Tareas de razonamiento moderado',
+                    'Aplicaciones con recursos limitados',
+                    'Prototipado rápido',
+                ],
+                benchmarks: { generalKnowledge: 62, coding: 46, mathReasoning: 55, speed: 78, instructionFollowing: 60,
+                    multilingual: 68 },
+            },
+            'qwen3-8b': {
+                id: 'qwen3-8b',
+                name: 'Qwen 3 8B',
+                family: 'Qwen 3',
+                params: '8B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#9b6dff',
+                description: 'Modelo Qwen3 tope de gama media, rendimiento cercano a modelos mayores.',
+                strengths: [
+                    'Razonamiento avanzado',
+                    'Excelente comprensión contextual',
+                    'Manejo sofisticado de instrucciones',
+                    'Muy versátil en dominios',
+                ],
+                bestFor: [
+                    'Asistente de productividad avanzado',
+                    'Análisis de datos complejos',
+                    'Tareas creativas y técnicas',
+                    'Aplicaciones que requieren fiabilidad',
+                ],
+                benchmarks: { generalKnowledge: 76, coding: 62, mathReasoning: 68, speed: 52, instructionFollowing: 72,
+                    multilingual: 74 },
+            },
+            'qwen35-4b': {
+                id: 'qwen35-4b',
+                name: 'Qwen 3.5 4B',
+                family: 'Qwen 3.5',
+                params: '4B',
+                category: 'General',
+                contextWindow: '32K',
+                color: '#b794f4',
+                description: 'Iteración refinada con mejor alineación y calidad de respuestas.',
+                strengths: [
+                    'Respuestas más naturales y alineadas',
+                    'Buena relación calidad-rendimiento',
+                    'Menos alucinaciones',
+                    'Eficiente en diversos hardware',
+                ],
+                bestFor: [
+                    'Chat conversacional',
+                    'Tareas de redacción',
+                    'Aplicaciones educativas',
+                    'Despliegue local en laptops',
+                ],
+                benchmarks: { generalKnowledge: 64, coding: 44, mathReasoning: 52, speed: 76, instructionFollowing: 63,
+                    multilingual: 66 },
+            },
+            'qwen35-9b': {
+                id: 'qwen35-9b',
+                name: 'Qwen 3.5 9B',
+                family: 'Qwen 3.5',
+                params: '9B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#b794f4',
+                description: 'El más potente de la serie Qwen3.5, compite con modelos de 12-13B.',
+                strengths: [
+                    'Rendimiento sobresaliente para 9B',
+                    'Gran profundidad de razonamiento',
+                    'Excelente en tareas creativas',
+                    'Manejo de contextos muy largos',
+                ],
+                bestFor: [
+                    'Aplicaciones de alto rendimiento',
+                    'Escritura creativa y profesional',
+                    'Análisis profundo de documentos',
+                    'Tareas que requieren precisión',
+                ],
+                benchmarks: { generalKnowledge: 79, coding: 66, mathReasoning: 71, speed: 45, instructionFollowing: 74,
+                    multilingual: 76 },
+            },
+            'llama32-3b': {
+                id: 'llama32-3b',
+                name: 'Llama 3.2 3B',
+                family: 'Llama',
+                params: '3B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#ff6b9d',
+                description: 'Modelo compacto de Meta con excelente rendimiento para su tamaño.',
+                strengths: [
+                    'Muy eficiente para 3B',
+                    'Buen rendimiento en inglés',
+                    'Arquitectura optimizada',
+                    'Comunidad grande y soporte',
+                ],
+                bestFor: [
+                    'Aplicaciones en inglés',
+                    'Tareas de resumen',
+                    'Clasificación de texto',
+                    'On-device deployment',
+                ],
+                benchmarks: { generalKnowledge: 56, coding: 38, mathReasoning: 44, speed: 90, instructionFollowing: 50,
+                    multilingual: 35 },
+            },
+            'llama31-8b': {
+                id: 'llama31-8b',
+                name: 'Llama 3.1 8B',
+                family: 'Llama',
+                params: '8B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#ff6b9d',
+                description: 'Modelo insignia de Meta en la categoría 8B, muy popular y fiable.',
+                strengths: [
+                    'Excelente rendimiento general en inglés',
+                    'Sólido seguimiento de instrucciones',
+                    'Amplio ecosistema de herramientas',
+                    'Buena base para fine-tuning',
+                ],
+                bestFor: [
+                    'Aplicaciones de producción en inglés',
+                    'Fine-tuning para dominios específicos',
+                    'Asistentes conversacionales',
+                    'Tareas de NLP general',
+                ],
+                benchmarks: { generalKnowledge: 74, coding: 56, mathReasoning: 60, speed: 55, instructionFollowing: 70,
+                    multilingual: 42 },
+            },
+            'ds-r1-llama-8b': {
+                id: 'ds-r1-llama-8b',
+                name: 'DeepSeek R1 Distill Llama 8B',
+                family: 'DeepSeek R1',
+                params: '8B',
+                category: 'Reasoning',
+                contextWindow: '128K',
+                color: '#4da6ff',
+                description: 'Destilado del potente DeepSeek R1, especializado en razonamiento profundo.',
+                strengths: [
+                    'Razonamiento encadenado excepcional',
+                    'Resolución de problemas complejos',
+                    'Pensamiento paso a paso',
+                    'Matemáticas y lógica avanzadas',
+                ],
+                bestFor: [
+                    'Resolución de problemas matemáticos',
+                    'Razonamiento lógico complejo',
+                    'Análisis crítico',
+                    'Tareas que requieren pensar',
+                ],
+                benchmarks: { generalKnowledge: 70, coding: 60, mathReasoning: 80, speed: 40, instructionFollowing: 64,
+                    multilingual: 50 },
+            },
+            'ds-r1-qwen-7b': {
+                id: 'ds-r1-qwen-7b',
+                name: 'DeepSeek R1 Distill Qwen 7B',
+                family: 'DeepSeek R1',
+                params: '7B',
+                category: 'Reasoning',
+                contextWindow: '128K',
+                color: '#4da6ff',
+                description: 'Combinación de arquitectura Qwen con destilación de R1, razonamiento potente.',
+                strengths: [
+                    'Razonamiento matemático superior',
+                    'Buena base multilingüe (herencia Qwen)',
+                    'Pensamiento estructurado',
+                    'Ideal para tareas STEM',
+                ],
+                bestFor: [
+                    'Problemas de ingeniería',
+                    'Cálculos y derivaciones',
+                    'Razonamiento científico',
+                    'Análisis de datos complejos',
+                ],
+                benchmarks: { generalKnowledge: 68, coding: 58, mathReasoning: 78, speed: 42, instructionFollowing: 62,
+                    multilingual: 60 },
+            },
+            'ds-r1-qwen3-8b': {
+                id: 'ds-r1-qwen3-8b',
+                name: 'DeepSeek R1 0528 Qwen3 8B',
+                family: 'DeepSeek R1',
+                params: '8B',
+                category: 'Reasoning',
+                contextWindow: '128K',
+                color: '#4da6ff',
+                description: 'La versión más reciente del destilado R1 sobre Qwen3, rendimiento puntero.',
+                strengths: [
+                    'Razonamiento de última generación',
+                    'Excelente en benchmarks de lógica',
+                    'Capacidad de auto-corrección',
+                    'Profundidad analítica notable',
+                ],
+                bestFor: [
+                    'Investigación y análisis',
+                    'Resolución de problemas complejos',
+                    'Tareas de razonamiento abstracto',
+                    'Aplicaciones que requieren precisión lógica',
+                ],
+                benchmarks: { generalKnowledge: 74, coding: 64, mathReasoning: 84, speed: 38, instructionFollowing: 66,
+                    multilingual: 56 },
+            },
+            'gemma3-4b': {
+                id: 'gemma3-4b',
+                name: 'Gemma 3 4B',
+                family: 'Gemma',
+                params: '4B',
+                category: 'General',
+                contextWindow: '8K',
+                color: '#3dd68c',
+                description: 'Modelo de Google, compacto y eficiente con buena calidad de respuestas.',
+                strengths: [
+                    'Respuestas concisas y útiles',
+                    'Buen rendimiento en benchmarks',
+                    'Eficiente en TPU/GPU',
+                    'Diseñado por Google DeepMind',
+                ],
+                bestFor: [
+                    'Chatbots concisos',
+                    'Tareas de respuesta rápida',
+                    'Aplicaciones Google Cloud',
+                    'Fine-tuning con Keras',
+                ],
+                benchmarks: { generalKnowledge: 60, coding: 40, mathReasoning: 46, speed: 80, instructionFollowing: 58,
+                    multilingual: 38 },
+            },
+            'gemma4-e2b': {
+                id: 'gemma4-e2b',
+                name: 'Gemma 4 e2B',
+                family: 'Gemma',
+                params: '2B',
+                category: 'Compact',
+                contextWindow: '8K',
+                color: '#3dd68c',
+                description: 'Ultra-compacto, diseñado para máxima eficiencia en dispositivos pequeños.',
+                strengths: [
+                    'Extremadamente ligero (2B)',
+                    'Inferencia rapidísima',
+                    'Ideal para edge computing',
+                    'Consumo mínimo de RAM (~1.5GB Q4)',
+                ],
+                bestFor: [
+                    'Dispositivos móviles',
+                    'IoT y wearables',
+                    'Tareas simples on-device',
+                    'Prototipos ultra-rápidos',
+                ],
+                benchmarks: { generalKnowledge: 42, coding: 22, mathReasoning: 30, speed: 98, instructionFollowing: 38,
+                    multilingual: 28 },
+            },
+            'gemma4-e4b': {
+                id: 'gemma4-e4b',
+                name: 'Gemma 4 e4B',
+                family: 'Gemma',
+                params: '4B',
+                category: 'General',
+                contextWindow: '8K',
+                color: '#3dd68c',
+                description: 'Evolución de Gemma, mejor rendimiento manteniendo eficiencia.',
+                strengths: [
+                    'Mejor razonamiento que Gemma3',
+                    'Respuestas bien estructuradas',
+                    'Buena eficiencia general',
+                    'Menos alucinaciones',
+                ],
+                bestFor: [
+                    'Aplicaciones conversacionales',
+                    'Tareas de moderación',
+                    'Clasificación de contenido',
+                    'Asistentes ligeros',
+                ],
+                benchmarks: { generalKnowledge: 63, coding: 42, mathReasoning: 48, speed: 75, instructionFollowing: 60,
+                    multilingual: 40 },
+            },
+            'smollm3-3b': {
+                id: 'smollm3-3b',
+                name: 'SmolLM3 3B',
+                family: 'SmolLM',
+                params: '3B',
+                category: 'Compact',
+                contextWindow: '8K',
+                color: '#ffa94d',
+                description: 'Modelo ultra-eficiente de HuggingFace, optimizado para velocidad.',
+                strengths: [
+                    'Inferencia extremadamente rápida',
+                    'Muy bajo consumo de memoria',
+                    'Ideal para batched inference',
+                    'Código abierto y bien documentado',
+                ],
+                bestFor: [
+                    'Procesamiento por lotes',
+                    'Tareas de clasificación masiva',
+                    'Edge deployment',
+                    'Experimentación rápida',
+                ],
+                benchmarks: { generalKnowledge: 44, coding: 28, mathReasoning: 35, speed: 95, instructionFollowing: 40,
+                    multilingual: 30 },
+            },
+            'helium-2b': {
+                id: 'helium-2b',
+                name: 'Helium 2B',
+                family: 'Helium',
+                params: '2B',
+                category: 'Compact',
+                contextWindow: '4K',
+                color: '#ffa94d',
+                description: 'El más pequeño del grupo, diseñado para máxima velocidad y mínimo consumo.',
+                strengths: [
+                    'Velocidad de inferencia máxima',
+                    'Consumo RAM mínimo (~1GB Q4)',
+                    'Perfecto para tareas simples',
+                    'Latencia casi nula',
+                ],
+                bestFor: [
+                    'Clasificación simple',
+                    'Extracción de entidades básica',
+                    'Filtrado de contenido',
+                    'Dispositivos muy limitados',
+                ],
+                benchmarks: { generalKnowledge: 35, coding: 18, mathReasoning: 25, speed: 100, instructionFollowing: 30,
+                    multilingual: 22 },
+            },
+            'phi35-mini': {
+                id: 'phi35-mini',
+                name: 'Phi-3.5 Mini',
+                family: 'Phi',
+                params: '3.8B',
+                category: 'Compact',
+                contextWindow: '128K',
+                color: '#ffa94d',
+                description: 'Modelo compacto de Microsoft con rendimiento sorprendente y contexto largo.',
+                strengths: [
+                    'Rendimiento excepcional para <4B',
+                    'Ventana de contexto de 128K',
+                    'Buen razonamiento y conocimiento',
+                    'Entrenado con datos de alta calidad',
+                ],
+                bestFor: [
+                    'Análisis de documentos largos',
+                    'Tareas que requieren contexto extenso',
+                    'Aplicaciones con recursos limitados',
+                    'Chat informativo compacto',
+                ],
+                benchmarks: { generalKnowledge: 66, coding: 48, mathReasoning: 54, speed: 72, instructionFollowing: 62,
+                    multilingual: 44 },
+            },
+            'qwen3-4b-thinking': {
+                id: 'qwen3-4b-thinking',
+                name: 'Qwen3 4B Thinking',
+                family: 'Qwen 3',
+                params: '4B',
+                category: 'Reasoning',
+                contextWindow: '32K',
+                color: '#9b6dff',
+                description: 'Variante "Thinking" de Qwen3, muestra su cadena de pensamiento antes de responder.',
+                strengths: [
+                    'Transparencia en el razonamiento',
+                    'Pensamiento paso a paso visible',
+                    'Ideal para depuración de prompts',
+                    'Bueno en tareas de lógica',
+                ],
+                bestFor: [
+                    'Educación y aprendizaje',
+                    'Debugging de razonamiento',
+                    'Tareas que requieren explicación',
+                    'Análisis transparente',
+                ],
+                benchmarks: { generalKnowledge: 60, coding: 44, mathReasoning: 62, speed: 58, instructionFollowing: 58,
+                    multilingual: 64 },
+            },
+            'mistral3-7b': {
+                id: 'mistral3-7b',
+                name: 'Mistral 3 7B',
+                family: 'Mistral',
+                params: '7B',
+                category: 'General',
+                contextWindow: '32K',
+                color: '#f7c948',
+                description: 'Modelo europeo de alto rendimiento, conocido por su eficiencia y calidad.',
+                strengths: [
+                    'Excelente rendimiento multilingüe europeo',
+                    'Arquitectura eficiente (MoE-like)',
+                    'Muy bueno en francés, español, alemán',
+                    'Respuestas naturales y fluidas',
+                ],
+                bestFor: [
+                    'Aplicaciones multilingües europeas',
+                    'Chat conversacional fluido',
+                    'Tareas de redacción',
+                    'Asistentes en múltiples idiomas',
+                ],
+                benchmarks: { generalKnowledge: 70, coding: 52, mathReasoning: 58, speed: 60, instructionFollowing: 66,
+                    multilingual: 80 },
+            },
+            'glm4-9b': {
+                id: 'glm4-9b',
+                name: 'GLM-4 9B Chat',
+                family: 'GLM',
+                params: '9B',
+                category: 'General',
+                contextWindow: '128K',
+                color: '#e879f9',
+                description: 'Modelo chino de alto rendimiento con excelente soporte bilingüe chino/inglés.',
+                strengths: [
+                    'Excelente en chino e inglés',
+                    'Muy buen conocimiento general',
+                    'Gran ventana de contexto',
+                    'Arquitectura GLM innovadora',
+                ],
+                bestFor: [
+                    'Aplicaciones bilingües chino/inglés',
+                    'Conocimiento enciclopédico',
+                    'Chat culturalmente consciente',
+                    'Traducción chino↔inglés',
+                ],
+                benchmarks: { generalKnowledge: 75, coding: 54, mathReasoning: 62, speed: 48, instructionFollowing: 68,
+                    multilingual: 70 },
+            },
+        };
+
+        // ==================== STATE ====================
+        let radarChartInstance = null;
+        let barChartInstance = null;
+
+        // ==================== HELPERS ====================
+        function getModelData(id) {
+            return modelsDB[id] || modelsDB['qwen25-7b'];
+        }
+
+        function scoreClass(val) {
+            if (val >= 70) return 'high';
+            if (val >= 45) return 'mid';
+            return 'low';
+        }
+
+        function modelColorA() {
+            return getModelData(document.getElementById('modelASelect').value).color;
+        }
+
+        function modelColorB() {
+            return getModelData(document.getElementById('modelBSelect').value).color;
+        }
+
+        // ==================== UPDATE FUNCTIONS ====================
+        function updateModelInfo() {
+            const modelA = getModelData(document.getElementById('modelASelect').value);
+            const modelB = getModelData(document.getElementById('modelBSelect').value);
+
+            document.getElementById('modelAInfo').innerHTML = `
+            <span class="info-chip">📦 ${modelA.params}</span>
+            <span class="info-chip">📂 ${modelA.category}</span>
+            <span class="info-chip">📏 ${modelA.contextWindow}</span>
+            <span class="info-chip">⚡ Q4</span>
+          `;
+            document.getElementById('modelBInfo').innerHTML = `
+            <span class="info-chip">📦 ${modelB.params}</span>
+            <span class="info-chip">📂 ${modelB.category}</span>
+            <span class="info-chip">📏 ${modelB.contextWindow}</span>
+            <span class="info-chip">⚡ Q4</span>
+          `;
+
+            document.getElementById('strengthTitleA').textContent = `🔵 ${modelA.name} - Fortalezas`;
+            document.getElementById('strengthTitleB').textContent = `🟢 ${modelB.name} - Fortalezas`;
+
+            const listA = document.getElementById('strengthListA');
+            const listB = document.getElementById('strengthListB');
+            listA.innerHTML = modelA.strengths.map(s => `<li>${s}</li>`).join('');
+            listB.innerHTML = modelB.strengths.map(s => `<li>${s}</li>`).join('');
+
+            // Verdict
+            updateVerdict(modelA, modelB);
+            // Detail table
+            updateDetailTable(modelA, modelB);
+        }
+
+        function updateVerdict(modelA, modelB) {
+            const bA = modelA.benchmarks;
+            const bB = modelB.benchmarks;
+            const avgA = Object.values(bA).reduce((a, b) => a + b, 0) / 6;
+            const avgB = Object.values(bB).reduce((a, b) => a + b, 0) / 6;
+
+            let verdictText = '';
+            const diff = avgA - avgB;
+
+            if (Math.abs(diff) < 3) {
+                verdictText =
+                    `🤝 <strong>Empate técnico</strong> entre <strong>${modelA.name}</strong> y <strong>${modelB.name}</strong>. `;
+                verdictText +=
+                    `Ambos modelos ofrecen rendimiento similar en general. La elección depende del caso de uso específico: `;
+                if (bA.coding > bB.coding + 5) verdictText +=
+                    `<strong>${modelA.name}</strong> destaca más en programación. `;
+                if (bB.coding > bA.coding + 5) verdictText +=
+                    `<strong>${modelB.name}</strong> destaca más en programación. `;
+                if (bA.speed > bB.speed + 5) verdictText +=
+                `<strong>${modelA.name}</strong> es más rápido para inferencia. `;
+                if (bB.speed > bA.speed + 5) verdictText +=
+                `<strong>${modelB.name}</strong> es más rápido para inferencia. `;
+                if (Math.abs(bA.coding - bB.coding) <= 5 && Math.abs(bA.speed - bB.speed) <= 5) {
+                    verdictText += `Recomendamos probar ambos en tu tarea específica para decidir.`;
+                }
+            } else if (diff > 0) {
+                verdictText =
+                    `🏆 <strong>${modelA.name}</strong> lidera esta comparación con una ventaja global de <strong>+${diff.toFixed(1)} puntos</strong> sobre <strong>${modelB.name}</strong>. `;
+                const winsA = Object.keys(bA).filter(k => bA[k] > bB[k] + 3);
+                if (winsA.length > 0) {
+                    const winLabels = { generalKnowledge: 'Conocimiento General', coding: 'Programación',
+                        mathReasoning: 'Razonamiento Matemático', speed: 'Velocidad',
+                        instructionFollowing: 'Seguimiento de Instrucciones', multilingual: 'Soporte Multilingüe' };
+                    verdictText += `Domina en: <strong>${winsA.map(k => winLabels[k]).join(', ')}</strong>. `;
+                }
+                if (bB.speed > bA.speed + 5) verdictText +=
+                    `Sin embargo, <strong>${modelB.name}</strong> es más rápido. `;
+            } else {
+                verdictText =
+                    `🏆 <strong>${modelB.name}</strong> lidera esta comparación con una ventaja global de <strong>+${Math.abs(diff).toFixed(1)} puntos</strong> sobre <strong>${modelA.name}</strong>. `;
+                const winsB = Object.keys(bB).filter(k => bB[k] > bA[k] + 3);
+                if (winsB.length > 0) {
+                    const winLabels = { generalKnowledge: 'Conocimiento General', coding: 'Programación',
+                        mathReasoning: 'Razonamiento Matemático', speed: 'Velocidad',
+                        instructionFollowing: 'Seguimiento de Instrucciones', multilingual: 'Soporte Multilingüe' };
+                    verdictText += `Domina en: <strong>${winsB.map(k => winLabels[k]).join(', ')}</strong>. `;
+                }
+                if (bA.speed > bB.speed + 5) verdictText +=
+                    `Sin embargo, <strong>${modelA.name}</strong> es más rápido. `;
+            }
+
+            document.getElementById('verdictText').innerHTML = verdictText;
+        }
+
+        function updateDetailTable(modelA, modelB) {
+            const tbody = document.getElementById('detailTableBody');
+            const models = [modelA, modelB];
+            tbody.innerHTML = models.map(m => {
+                const b = m.benchmarks;
+                const avg = Math.round(Object.values(b).reduce((a, c) => a + c, 0) / 6);
+                return `
+              <tr>
+                <td class="model-col">${m.name} <span style="color:${m.color};font-size:0.7rem;">(${m.params} Q4)</span></td>
+                <td><span class="score ${scoreClass(b.generalKnowledge)}">${b.generalKnowledge}</span></td>
+                <td><span class="score ${scoreClass(b.coding)}">${b.coding}</span></td>
+                <td><span class="score ${scoreClass(b.mathReasoning)}">${b.mathReasoning}</span></td>
+                <td><span class="score ${scoreClass(b.speed)}">${b.speed}</span></td>
+                <td><span class="score ${scoreClass(b.instructionFollowing)}">${b.instructionFollowing}</span></td>
+                <td><span class="score ${scoreClass(b.multilingual)}">${b.multilingual}</span></td>
+                <td><span class="score ${scoreClass(avg)}"><strong>${avg}</strong></span></td>
+              </tr>
+            `;
+            }).join('');
+        }
+
+        function updateCharts() {
+            const modelA = getModelData(document.getElementById('modelASelect').value);
+            const modelB = getModelData(document.getElementById('modelBSelect').value);
+            const colorA = modelA.color;
+            const colorB = modelB.color;
+
+            // Radar Chart
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            if (radarChartInstance) radarChartInstance.destroy();
+
+            const radarLabels = [
+                'Conocimiento General',
+                'Programación',
+                'Razonamiento',
+                'Velocidad',
+                'Seg. Instrucciones',
+                'Multilingüe',
+            ];
+            const radarDataA = [
+                modelA.benchmarks.generalKnowledge,
+                modelA.benchmarks.coding,
+                modelA.benchmarks.mathReasoning,
+                modelA.benchmarks.speed,
+                modelA.benchmarks.instructionFollowing,
+                modelA.benchmarks.multilingual,
+            ];
+            const radarDataB = [
+                modelB.benchmarks.generalKnowledge,
+                modelB.benchmarks.coding,
+                modelB.benchmarks.mathReasoning,
+                modelB.benchmarks.speed,
+                modelB.benchmarks.instructionFollowing,
+                modelB.benchmarks.multilingual,
+            ];
+
+            radarChartInstance = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: radarLabels,
+                    datasets: [{
+                        label: modelA.name,
+                        data: radarDataA,
+                        borderColor: colorA,
+                        backgroundColor: colorA + '20',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: colorA,
+                        pointBorderColor: '#fff',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.2,
+                        fill: true,
+                    }, {
+                        label: modelB.name,
+                        data: radarDataB,
+                        borderColor: colorB,
+                        backgroundColor: colorB + '20',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: colorB,
+                        pointBorderColor: '#fff',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.2,
+                        fill: true,
+                    }, ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#a0a0c0',
+                                font: { size: 12, weight: '600' },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyleWidth: 10,
+                            },
+                        },
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: false,
+                            min: 10,
+                            max: 100,
+                            ticks: {
+                                stepSize: 15,
+                                color: '#7070a0',
+                                backdropColor: 'transparent',
+                                font: { size: 9 },
+                            },
+                            grid: { color: 'rgba(255,255,255,0.06)' },
+                            angleLines: { color: 'rgba(255,255,255,0.06)' },
+                            pointLabels: {
+                                color: '#c0c0e0',
+                                font: { size: 11, weight: '600' },
+                            },
+                        },
+                    },
+                },
+            });
+
+            // Bar Chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            const barLabels = ['Conocimiento\nGeneral', 'Programación', 'Razonamiento\nMatemático', 'Velocidad',
+                'Seg.\nInstrucciones', 'Multilingüe'
+            ];
+            const barDataA = radarDataA;
+            const barDataB = radarDataB;
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        label: modelA.name,
+                        data: barDataA,
+                        backgroundColor: colorA + 'cc',
+                        borderColor: colorA,
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }, {
+                        label: modelB.name,
+                        data: barDataB,
+                        backgroundColor: colorB + 'cc',
+                        borderColor: colorB,
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }, ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#a0a0c0',
+                                font: { size: 12, weight: '600' },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyleWidth: 10,
+                            },
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 10,
+                            max: 100,
+                            ticks: { color: '#7070a0', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                        },
+                        x: {
+                            ticks: { color: '#a0a0c0', font: { size: 10, weight: '500' } },
+                            grid: { display: false },
+                        },
+                    },
+                },
+            });
+        }
+
+        function updateComparison() {
+            updateModelInfo();
+            updateCharts();
+            // Re-trigger animations
+            document.querySelectorAll('.chart-card, .strength-card, .verdict-card').forEach(el => {
+                el.classList.remove('animate-in');
+                void el.offsetWidth;
+                el.classList.add('animate-in');
+            });
+        }
+
+        function randomBattle() {
+            const allIds = Object.keys(modelsDB);
+            const idA = allIds[Math.floor(Math.random() * allIds.length)];
+            let idB = allIds[Math.floor(Math.random() * allIds.length)];
+            while (idB === idA) {
+                idB = allIds[Math.floor(Math.random() * allIds.length)];
+            }
+            document.getElementById('modelASelect').value = idA;
+            document.getElementById('modelBSelect').value = idB;
+            updateComparison();
+            // Scroll to charts
+            document.querySelector('.charts-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ==================== INIT ====================
+        function init() {
+            updateComparison();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
